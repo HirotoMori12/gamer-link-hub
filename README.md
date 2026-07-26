@@ -5,6 +5,9 @@
 ### 画面遷移図
 Figma：<https://www.figma.com/design/Vw08XOQ4M0IWJmSJ2VwBkP/%E7%84%A1%E9%A1%8C?node-id=0-1&t=oVRroHmud1EO9oXM-1>
 
+### ER図
+dbdiagram.io：<https://dbdiagram.io/d/6a6523f0c3a90dd98db62ce0>
+
 ---
 
 ## 2. このアイデアはどこから生まれたか
