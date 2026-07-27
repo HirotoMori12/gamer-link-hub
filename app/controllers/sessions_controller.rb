@@ -12,7 +12,7 @@ class SessionsController < ApplicationController
       user.sync_guilds_from_discord(guilds_data) if guilds_data
 
       session[:user_id] = user.id
-      redirect_to root_path, notice: "ログインしました"
+      redirect_to guilds_path, notice: "ログインしました"
     else
       redirect_to root_path, alert: "ログインに失敗しました"
     end

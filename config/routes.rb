@@ -6,6 +6,13 @@ Rails.application.routes.draw do
   get "/auth/discord/callback", to: "sessions#create"
   delete "/logout", to: "sessions#destroy", as: :sign_out
 
+  # Guild管理
+  resources :guilds, only: [:index] do
+    member do
+      post :select
+    end
+  end
+
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
