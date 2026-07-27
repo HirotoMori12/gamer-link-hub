@@ -62,3 +62,6 @@ group :test do
   gem "capybara"
   gem "selenium-webdriver"
 end
+
+# 環境変数管理
+gem "dotenv-rails", groups: [:development, :test]
