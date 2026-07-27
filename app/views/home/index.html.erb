@@ -1,5 +1,13 @@
 <div class="min-h-screen flex flex-col items-center justify-center bg-gray-50">
   <h1 class="text-4xl font-bold text-gray-800 mb-4">GameStock</h1>
   <p class="text-gray-600 mb-8">Discordの雑談で流れる情報を、簡単に整理・検索できるツール</p>
-  <p class="text-sm text-gray-500">近日リリース予定</p>
+
+  <% if logged_in? %>
+    <div class="text-center">
+      <p class="text-gray-700 mb-4">こんにちは、<%= current_user.username %>さん</p>
+      <%= button_to "ログアウト", sign_out_path, method: :delete, data: { turbo: false }, class: "px-6 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400" %>
+    </div>
+  <% else %>
+    <%= button_to "Discordでログイン", sign_in_path, method: :post, data: { turbo: false }, class: "px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium" %>
+  <% end %>
 </div>
