@@ -1,0 +1,20 @@
+<div class="min-h-screen bg-gray-50 py-8 px-4">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">サーバーを選択</h1>
+    <p class="text-gray-600 mb-8">情報を管理したいDiscordサーバーを選んでください</p>
+
+    <% if @guilds.any? %>
+      <div class="space-y-3">
+        <% @guilds.each do |guild| %>
+          <%= button_to select_guild_path(guild), method: :post, data: { turbo: false }, class: "w-full text-left px-6 py-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-indigo-500 transition" do %>
+            <span class="font-medium text-gray-800"><%= guild.name %></span>
+          <% end %>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="text-center py-12">
+        <p class="text-gray-500">所属しているサーバーがありません</p>
+      </div>
+    <% end %>
+  </div>
+</div>
