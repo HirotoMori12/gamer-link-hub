@@ -10,9 +10,27 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_27_105313) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_27_115442) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "guilds", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "discord_guild_id", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["discord_guild_id"], name: "index_guilds_on_discord_guild_id", unique: true
+  end
+
+  create_table "user_guilds", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "guild_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["guild_id"], name: "index_user_guilds_on_guild_id"
+    t.index ["user_id", "guild_id"], name: "index_user_guilds_on_user_id_and_guild_id", unique: true
+    t.index ["user_id"], name: "index_user_guilds_on_user_id"
+  end
 
   create_table "users", force: :cascade do |t|
     t.string "avatar_url"
@@ -22,4 +40,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_27_105313) do
     t.string "username", null: false
     t.index ["discord_uid"], name: "index_users_on_discord_uid", unique: true
   end
+
+  add_foreign_key "user_guilds", "guilds"
+  add_foreign_key "user_guilds", "users"
 end
