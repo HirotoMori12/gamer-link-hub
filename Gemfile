@@ -70,3 +70,6 @@ gem "dotenv-rails", groups: [:development, :test]
 gem "omniauth"
 gem "omniauth-discord"
 gem "omniauth-rails_csrf_protection"
+
+# Discord Interactions署名検証
+gem "ed25519"

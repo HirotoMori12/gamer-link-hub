@@ -1,0 +1,2 @@
+module Discord::InteractionsHelper
+end
