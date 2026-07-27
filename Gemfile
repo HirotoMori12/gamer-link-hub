@@ -65,3 +65,8 @@ end
 
 # 環境変数管理
 gem "dotenv-rails", groups: [:development, :test]
+
+# Discord OAuth認証
+gem "omniauth"
+gem "omniauth-discord"
+gem "omniauth-rails_csrf_protection"
