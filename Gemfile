@@ -73,3 +73,6 @@ gem "omniauth-rails_csrf_protection"
 
 # Discord Interactions署名検証
 gem "ed25519"
+
+# 画像アップロード用
+gem "cloudinary"
