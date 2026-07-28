@@ -1,6 +1,8 @@
 class Guild < ApplicationRecord
   has_many :user_guilds, dependent: :destroy
   has_many :users, through: :user_guilds
+  has_many :posts, dependent: :destroy
+  has_many :tags, dependent: :destroy
 
   validates :discord_guild_id, presence: true, uniqueness: true
   validates :name, presence: true

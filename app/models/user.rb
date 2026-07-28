@@ -1,6 +1,7 @@
 class User < ApplicationRecord
   has_many :user_guilds, dependent: :destroy
   has_many :guilds, through: :user_guilds
+  has_many :posts, dependent: :destroy
 
   validates :discord_uid, presence: true, uniqueness: true
   validates :username, presence: true

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_28_082954) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_28_093831) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -20,6 +20,36 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_28_082954) do
     t.string "name", null: false
     t.datetime "updated_at", null: false
     t.index ["discord_guild_id"], name: "index_guilds_on_discord_guild_id", unique: true
+  end
+
+  create_table "images", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "image_url", null: false
+    t.bigint "post_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["post_id"], name: "index_images_on_post_id"
+  end
+
+  create_table "post_tags", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "post_id", null: false
+    t.bigint "tag_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["post_id", "tag_id"], name: "index_post_tags_on_post_id_and_tag_id", unique: true
+    t.index ["post_id"], name: "index_post_tags_on_post_id"
+    t.index ["tag_id"], name: "index_post_tags_on_tag_id"
+  end
+
+  create_table "posts", force: :cascade do |t|
+    t.text "body"
+    t.datetime "created_at", null: false
+    t.string "discord_message_id"
+    t.bigint "guild_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["discord_message_id"], name: "index_posts_on_discord_message_id"
+    t.index ["guild_id"], name: "index_posts_on_guild_id"
+    t.index ["user_id"], name: "index_posts_on_user_id"
   end
 
   create_table "solid_queue_blocked_executions", force: :cascade do |t|
@@ -143,6 +173,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_28_082954) do
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
+  create_table "tags", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "guild_id", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["guild_id", "name"], name: "index_tags_on_guild_id_and_name", unique: true
+    t.index ["guild_id"], name: "index_tags_on_guild_id"
+  end
+
   create_table "user_guilds", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "guild_id", null: false
@@ -162,12 +201,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_28_082954) do
     t.index ["discord_uid"], name: "index_users_on_discord_uid", unique: true
   end
 
+  add_foreign_key "images", "posts"
+  add_foreign_key "post_tags", "posts"
+  add_foreign_key "post_tags", "tags"
+  add_foreign_key "posts", "guilds"
+  add_foreign_key "posts", "users"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "tags", "guilds"
   add_foreign_key "user_guilds", "guilds"
   add_foreign_key "user_guilds", "users"
 end
