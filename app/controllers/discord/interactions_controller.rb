@@ -1,6 +1,5 @@
 module Discord
   class InteractionsController < ApplicationController
-    # DiscordからのリクエストにはCSRFトークンがないため、この検証は無効化
     skip_before_action :verify_authenticity_token
     before_action :verify_discord_signature
 
@@ -14,13 +13,20 @@ module Discord
     CHANNEL_MESSAGE_WITH_SOURCE = 4
     DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE = 5
 
+    # Application Commandタイプ
+    CHAT_INPUT = 1
+    USER = 2
+    MESSAGE = 3
+
+    # メッセージフラグ
+    EPHEMERAL = 64
+
     def create
-      case interaction_params[:type]
+      case interaction_data[:type]
       when PING
         render json: { type: PONG }
       when APPLICATION_COMMAND
-        # 後のIssueで実装
-        render json: { type: CHANNEL_MESSAGE_WITH_SOURCE, data: { content: "コマンドを受信しました" } }
+        handle_application_command
       else
         render json: { error: "Unsupported interaction type" }, status: :bad_request
       end
@@ -28,8 +34,35 @@ module Discord
 
     private
 
-    def interaction_params
-      @interaction_params ||= JSON.parse(request.raw_post, symbolize_names: true)
+    def handle_application_command
+      command_type = interaction_data.dig(:data, :type)
+      command_name = interaction_data.dig(:data, :name)
+
+      if command_type == MESSAGE && command_name == "この情報を保存"
+        # 3秒以内に返す必要があるので、まずDeferred Responseを返す
+        # ephemeral(実行者のみ表示)フラグを立てる
+        SavePostFromDiscordJob.perform_later(interaction_data.deep_stringify_keys)
+
+        render json: {
+          type: DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
+          data: { flags: EPHEMERAL }
+        }
+      elsif command_type == CHAT_INPUT && command_name == "search"
+        # /search コマンドは次のIssueで実装
+        render json: {
+          type: CHANNEL_MESSAGE_WITH_SOURCE,
+          data: { content: "検索機能は準備中です", flags: EPHEMERAL }
+        }
+      else
+        render json: {
+          type: CHANNEL_MESSAGE_WITH_SOURCE,
+          data: { content: "不明なコマンドです", flags: EPHEMERAL }
+        }
+      end
+    end
+
+    def interaction_data
+      @interaction_data ||= JSON.parse(request.raw_post, symbolize_names: true)
     rescue JSON::ParserError
       {}
     end
