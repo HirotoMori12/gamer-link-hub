@@ -76,3 +76,6 @@ gem "ed25519"
 
 # 画像アップロード用
 gem "cloudinary"
+
+# 検索機能
+gem "ransack"

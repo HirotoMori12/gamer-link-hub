@@ -31,5 +31,28 @@ module Discord
       Rails.logger.error "Error sending followup message: #{e.message}"
       nil
     end
+
+    # 即時にEmbedを返す(Deferred Responseを使わない場合)
+    # Note: このメソッドは使わない場合もあるが、参考として実装
+    def create_message_with_embed(interaction_token:, embeds:)
+      uri = URI("#{BASE_URL}/webhooks/#{@application_id}/#{interaction_token}")
+      request = Net::HTTP::Post.new(uri)
+      request["Content-Type"] = "application/json"
+      request.body = { embeds: embeds }.to_json
+
+      response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+        http.request(request)
+      end
+
+      if response.code.to_i.between?(200, 299)
+        JSON.parse(response.body)
+      else
+        Rails.logger.error "Embed message failed: #{response.code} #{response.body}"
+        nil
+      end
+    rescue => e
+      Rails.logger.error "Error sending embed message: #{e.message}"
+      nil
+    end
   end
 end
