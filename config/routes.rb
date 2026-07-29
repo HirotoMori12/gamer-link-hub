@@ -13,6 +13,8 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :posts, only: [:index]
+
   # Discord Interactions
   namespace :discord do
     post "interactions", to: "interactions#create"
