@@ -58,53 +58,12 @@ module Discord
     end
 
     def handle_search_command
-      guild_id = interaction_data[:guild_id]
-      # /search コマンドの引数からキーワードを取得
-      keyword = interaction_data.dig(:data, :options)&.find { |opt| opt[:name] == "keyword" }&.dig(:value)
-
-      guild = Guild.find_by(discord_guild_id: guild_id)
-      unless guild
-        render json: {
-          type: CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            content: "このサーバーではGamer Link Hubが利用できません",
-            flags: EPHEMERAL
-          }
-        }
-        return
-      end
-
-      posts = PostSearcher.new(guild: guild, keyword: keyword).search
-
-      if posts.empty?
-        render json: {
-          type: CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            content: "「#{keyword}」に一致する投稿が見つかりませんでした",
-            flags: EPHEMERAL
-          }
-        }
-        return
-      end
-
-      # Discord Embedsとして整形
-      embeds = posts.map do |post|
-        {
-          title: post.body.truncate(80),
-          description: post.tags.any? ? "タグ: #{post.tags.map(&:name).join(', ')}" : nil,
-          color: 0x5865F2, # Discord Blurple color
-          timestamp: post.created_at.iso8601,
-          footer: { text: "投稿ID: #{post.id}" }
-        }.compact
-      end
+      # 3秒ルール対応:即座にDeferred Responseを返して、実際の処理はジョブで
+      SearchPostJob.perform_later(interaction_data.deep_stringify_keys)
 
       render json: {
-        type: CHANNEL_MESSAGE_WITH_SOURCE,
-        data: {
-          content: "「#{keyword}」の検索結果:#{posts.size}件",
-          embeds: embeds,
-          flags: EPHEMERAL
-        }
+        type: DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
+        data: { flags: EPHEMERAL }
       }
     end
 
