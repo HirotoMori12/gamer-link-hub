@@ -9,4 +9,12 @@ class Post < ApplicationRecord
   has_many_attached :attached_images
 
   validates :body, presence: true
+
+  def self.ransackable_attributes(auth_object = nil)
+    ["body", "created_at", "discord_message_id", "id", "updated_at"]
+  end
+
+  def self.ransackable_associations(auth_object = nil)
+    ["tags"]
+  end
 end
