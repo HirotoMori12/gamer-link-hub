@@ -24,9 +24,12 @@ class SavePostFromDiscordJob < ApplicationJob
       return
     end
 
+    # メッセージ本文の抽出(空だった場合の対処)
+    message_body = target_message["content"].presence || "(本文なし)"
+
     post = user.posts.create!(
       guild: guild,
-      body: target_message["content"] || "(本文なし)",
+      body: message_body,
       discord_message_id: target_message_id
     )
 
@@ -50,7 +53,9 @@ class SavePostFromDiscordJob < ApplicationJob
   rescue => e
     Rails.logger.error "SavePostFromDiscordJob failed: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
-    send_followup(interaction_token, "❌ 保存に失敗しました: #{e.message}") if interaction_token
+    if interaction_token
+      send_followup(interaction_token, "❌ 保存に失敗しました: #{e.message}")
+    end
   end
 
   private
