@@ -37,3 +37,6 @@
 # 環境変数ファイル
 .env
 .env.local
+
+# SimpleCovのカバレッジレポート
+/coverage/
