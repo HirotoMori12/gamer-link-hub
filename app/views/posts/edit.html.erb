@@ -1,0 +1,43 @@
+<div class="min-h-screen bg-gray-50 py-8 px-4">
+  <div class="max-w-4xl mx-auto">
+    <div class="mb-6">
+      <%= link_to "← 投稿詳細に戻る", post_path(@post), class: "text-indigo-600 hover:underline" %>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+      <h1 class="text-xl font-bold text-gray-800 mb-6">投稿を編集</h1>
+
+      <% if @post.errors.any? %>
+        <div class="bg-red-50 text-red-700 text-sm rounded p-3 mb-4">
+          <ul class="list-disc list-inside">
+            <% @post.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <%= form_with model: @post, local: true, class: "space-y-4" do |f| %>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">本文</label>
+          <%= f.text_area :body, rows: 6, class: "w-full px-3 py-2 border border-gray-300 rounded" %>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">タグ(カンマ区切りで入力)</label>
+          <%= text_field_tag "post[tag_names]", @post.tags.order(:name).pluck(:name).join(", "), placeholder: "例: VRChat, Mod", class: "w-full px-3 py-2 border border-gray-300 rounded" %>
+          <p class="text-xs text-gray-400 mt-1">既存のタグ名を消すと投稿から外れ、新しいタグ名を入力すると追加されます</p>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <%= f.submit "更新する", class: "px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 cursor-pointer" %>
+          <%= link_to "キャンセル", post_path(@post), class: "px-6 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300" %>
+        </div>
+      <% end %>
+
+      <div class="border-t mt-6 pt-4">
+        <%= button_to "この投稿を削除", post_path(@post), method: :delete, data: { turbo: false, confirm: "本当に削除しますか?" }, class: "px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700" %>
+      </div>
+    </div>
+  </div>
+</div>
