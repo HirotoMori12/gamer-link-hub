@@ -78,7 +78,7 @@ RSpec.describe PostsController, type: :controller do
       get :show, params: { id: post_record.id }
 
       expect(response).to have_http_status(:ok)
-      expect(assigns(:is_owner)).to eq(true)
+      expect(assigns(:is_owner)).to be(true)
     end
 
     it "他人の投稿の場合is_ownerがfalseになる(閲覧自体は可能)" do
@@ -87,7 +87,7 @@ RSpec.describe PostsController, type: :controller do
       get :show, params: { id: other_post.id }
 
       expect(response).to have_http_status(:ok)
-      expect(assigns(:is_owner)).to eq(false)
+      expect(assigns(:is_owner)).to be(false)
     end
 
     it "他guildの投稿にはアクセスできない" do

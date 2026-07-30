@@ -43,16 +43,16 @@ RSpec.describe Guild, type: :model do
   describe ".find_or_create_from_discord" do
     it "creates a guild from discord data" do
       expect {
-        Guild.find_or_create_from_discord("id" => "777", "name" => "新規サーバー")
-      }.to change(Guild, :count).by(1)
+        described_class.find_or_create_from_discord("id" => "777", "name" => "新規サーバー")
+      }.to change(described_class, :count).by(1)
     end
 
     it "does not create a duplicate for an existing discord_guild_id" do
       create(:guild, discord_guild_id: "777")
 
       expect {
-        Guild.find_or_create_from_discord("id" => "777", "name" => "別名")
-      }.not_to change(Guild, :count)
+        described_class.find_or_create_from_discord("id" => "777", "name" => "別名")
+      }.not_to change(described_class, :count)
     end
   end
 end

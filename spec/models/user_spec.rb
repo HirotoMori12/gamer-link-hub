@@ -51,9 +51,9 @@ RSpec.describe User, type: :model do
     it "creates a new user from omniauth data" do
       auth = auth_hash(uid: "111", name: "テストユーザー", image: "https://example.com/a.png")
 
-      expect { User.find_or_create_from_omniauth(auth) }.to change(User, :count).by(1)
+      expect { described_class.find_or_create_from_omniauth(auth) }.to change(described_class, :count).by(1)
 
-      user = User.find_by(discord_uid: "111")
+      user = described_class.find_by(discord_uid: "111")
       expect(user.username).to eq("テストユーザー")
       expect(user.avatar_url).to eq("https://example.com/a.png")
     end
@@ -62,8 +62,8 @@ RSpec.describe User, type: :model do
       existing = create(:user, discord_uid: "222")
       auth = auth_hash(uid: "222", name: "別名になっても無視される")
 
-      expect { User.find_or_create_from_omniauth(auth) }.not_to change(User, :count)
-      expect(User.find_or_create_from_omniauth(auth)).to eq(existing)
+      expect { described_class.find_or_create_from_omniauth(auth) }.not_to change(described_class, :count)
+      expect(described_class.find_or_create_from_omniauth(auth)).to eq(existing)
     end
   end
 
