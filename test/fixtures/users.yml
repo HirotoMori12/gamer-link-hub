@@ -1,11 +1,11 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  discord_uid: MyString
+  discord_uid: MyString1
   username: MyString
   avatar_url: MyString
 
 two:
-  discord_uid: MyString
+  discord_uid: MyString2
   username: MyString
   avatar_url: MyString
