@@ -59,6 +59,9 @@ group :development, :test do
 
   # テスト用データ生成 [https://github.com/thoughtbot/factory_bot_rails]
   gem "factory_bot_rails"
+
+  # N+1クエリの検知 [https://github.com/flyerhzm/bullet]
+  gem "bullet"
 end
 
 group :development do

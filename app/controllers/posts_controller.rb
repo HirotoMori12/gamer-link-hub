@@ -7,6 +7,7 @@ class PostsController < ApplicationController
   def index
     @posts = current_guild.posts
                            .includes(:user, :tags, :images)
+                           .with_attached_attached_images
                            .search_by_keyword(params[:keyword])
                            .tagged_with(params[:tag_id])
                            .order(created_at: :desc)
@@ -44,7 +45,7 @@ class PostsController < ApplicationController
 
   def set_post
     # current_guildのpostだけアクセス可能(他Guildへの不正アクセス防止)
-    @post = current_guild.posts.includes(:user, :tags, :images).find(params[:id])
+    @post = current_guild.posts.includes(:user, :tags, :images).with_attached_attached_images.find(params[:id])
   end
 
   # 投稿者本人以外は編集・削除不可

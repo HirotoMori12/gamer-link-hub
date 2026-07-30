@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe PostsController, type: :controller do
+  render_views
+
   let(:guild) { create(:guild) }
   let(:owner) { create(:user) }
   let(:other_user) { create(:user) }
@@ -68,6 +70,18 @@ RSpec.describe PostsController, type: :controller do
 
       expect(assigns(:posts)).to include(tagged)
       expect(assigns(:posts)).not_to include(post_record)
+    end
+
+    it "画像・タグ付きの投稿が複数あってもN+1が発生しない(Bulletで検知)" do
+      3.times do |i|
+        post = create(:post, guild: guild, user: owner, body: "投稿#{i}")
+        post.tags << create(:tag, guild: guild, name: "タグ#{i}")
+        post.images.create!(image_url: "https://example.com/#{i}.png")
+      end
+
+      get :index
+
+      expect(response).to have_http_status(:ok)
     end
   end
 
