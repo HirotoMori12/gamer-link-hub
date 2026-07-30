@@ -44,4 +44,84 @@ RSpec.describe Post, type: :model do
       expect(Tag.exists?(tag.id)).to be true
     end
   end
+
+  describe "#link_with!" do
+    it "links two posts to each other symmetrically" do
+      guild = create(:guild)
+      post_a = create(:post, guild: guild)
+      post_b = create(:post, guild: guild)
+
+      post_a.link_with!(post_b.id)
+
+      expect(post_a.reload.related_posts).to include(post_b)
+      expect(post_b.reload.related_posts).to include(post_a)
+    end
+
+    it "does not link a post to itself" do
+      post = create(:post)
+
+      expect { post.link_with!(post.id) }.not_to change(PostLink, :count)
+    end
+
+    it "is idempotent when called twice for the same pair" do
+      guild = create(:guild)
+      post_a = create(:post, guild: guild)
+      post_b = create(:post, guild: guild)
+
+      post_a.link_with!(post_b.id)
+
+      expect { post_a.link_with!(post_b.id) }.not_to change(PostLink, :count)
+    end
+  end
+
+  describe "#unlink_from!" do
+    it "removes the link in both directions" do
+      guild = create(:guild)
+      post_a = create(:post, guild: guild)
+      post_b = create(:post, guild: guild)
+      post_a.link_with!(post_b.id)
+
+      post_a.unlink_from!(post_b.id)
+
+      expect(post_a.reload.related_posts).not_to include(post_b)
+      expect(post_b.reload.related_posts).not_to include(post_a)
+    end
+  end
+
+  describe "#sync_related_posts!" do
+    it "adds new links and removes ones no longer selected" do
+      guild = create(:guild)
+      post = create(:post, guild: guild)
+      keep = create(:post, guild: guild)
+      drop = create(:post, guild: guild)
+      add = create(:post, guild: guild)
+      post.link_with!(keep.id)
+      post.link_with!(drop.id)
+
+      post.sync_related_posts!([keep.id, add.id])
+
+      expect(post.related_posts.reload).to contain_exactly(keep, add)
+      expect(drop.reload.related_posts).not_to include(post)
+    end
+
+    it "ignores posts from other guilds" do
+      post = create(:post, guild: create(:guild))
+      other_guild_post = create(:post, guild: create(:guild))
+
+      post.sync_related_posts!([other_guild_post.id])
+
+      expect(post.related_posts.reload).to be_empty
+    end
+
+    it "clears all links when given a blank value" do
+      guild = create(:guild)
+      post = create(:post, guild: guild)
+      other = create(:post, guild: guild)
+      post.link_with!(other.id)
+
+      post.sync_related_posts!(nil)
+
+      expect(post.related_posts.reload).to be_empty
+    end
+  end
 end

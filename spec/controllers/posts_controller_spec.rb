@@ -111,6 +111,16 @@ RSpec.describe PostsController, type: :controller do
         get :show, params: { id: other_guild_post.id }
       }.to raise_error(ActiveRecord::RecordNotFound)
     end
+
+    it "関連投稿があれば表示する" do
+      related = create(:post, guild: guild, user: owner, body: "関連する投稿です")
+      post_record.link_with!(related.id)
+
+      get :show, params: { id: post_record.id }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("関連する投稿です")
+    end
   end
 
   describe "GET #edit" do
@@ -129,6 +139,15 @@ RSpec.describe PostsController, type: :controller do
 
       expect(response).to redirect_to(post_path(other_post))
       expect(flash[:alert]).to be_present
+    end
+
+    it "関連投稿の候補として自分以外の同guildの投稿を読み込む" do
+      candidate = create(:post, guild: guild, user: owner)
+
+      get :edit, params: { id: post_record.id }
+
+      expect(assigns(:related_candidates)).to include(candidate)
+      expect(assigns(:related_candidates)).not_to include(post_record)
     end
   end
 
@@ -167,6 +186,33 @@ RSpec.describe PostsController, type: :controller do
 
       expect(response).to redirect_to(post_path(other_post))
       expect(other_post.reload.body).to eq("元の本文")
+    end
+
+    it "related_post_idsで指定した投稿と相互にリンクされる" do
+      target = create(:post, guild: guild, user: owner)
+
+      patch :update, params: { id: post_record.id, post: { body: post_record.body, related_post_ids: [target.id.to_s] } }
+
+      expect(post_record.reload.related_posts).to include(target)
+      expect(target.reload.related_posts).to include(post_record)
+    end
+
+    it "related_post_idsを空にすると既存の関連付けが解除される" do
+      linked = create(:post, guild: guild, user: owner)
+      post_record.link_with!(linked.id)
+
+      patch :update, params: { id: post_record.id, post: { body: post_record.body, related_post_ids: [""] } }
+
+      expect(post_record.reload.related_posts).to be_empty
+      expect(linked.reload.related_posts).to be_empty
+    end
+
+    it "他guildの投稿は関連付けられない" do
+      other_guild_post = create(:post, guild: create(:guild))
+
+      patch :update, params: { id: post_record.id, post: { body: post_record.body, related_post_ids: [other_guild_post.id.to_s] } }
+
+      expect(post_record.reload.related_posts).to be_empty
     end
   end
 

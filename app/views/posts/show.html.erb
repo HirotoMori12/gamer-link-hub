@@ -42,6 +42,27 @@
         <div class="bg-gray-50 rounded p-4 text-gray-800 whitespace-pre-wrap"><%= auto_link_urls(@post.body) %></div>
       </div>
 
+      <!-- 関連投稿 -->
+      <% if @post.related_posts.any? %>
+        <div class="mb-6">
+          <h2 class="text-sm font-medium text-gray-600 mb-3">関連投稿 (<%= @post.related_posts.size %>件)</h2>
+          <div class="space-y-2">
+            <% @post.related_posts.each do |related| %>
+              <%= link_to post_path(related), class: "block bg-gray-50 border border-gray-200 rounded p-3 hover:bg-gray-100 transition" do %>
+                <p class="text-sm text-gray-800 mb-1"><%= truncate(related.body, length: 60) %></p>
+                <% if related.tags.any? %>
+                  <div>
+                    <% related.tags.each do |tag| %>
+                      <span class="inline-block px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded mr-1"><%= tag.name %></span>
+                    <% end %>
+                  </div>
+                <% end %>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
       <!-- メタ情報 -->
       <div class="border-t pt-4 text-sm text-gray-500 flex items-center justify-between">
         <span>投稿者: <%= @post.user.username %></span>

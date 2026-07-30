@@ -29,6 +29,17 @@
           <p class="text-xs text-gray-400 mt-1">既存のタグ名を消すと投稿から外れ、新しいタグ名を入力すると追加されます</p>
         </div>
 
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">関連投稿</label>
+          <%= hidden_field_tag "post[related_post_ids][]", "" %>
+          <%= select_tag "post[related_post_ids][]",
+              options_for_select(@related_candidates.map { |p| [truncate(p.body, length: 50), p.id] }, @post.related_post_ids),
+              multiple: true,
+              size: 8,
+              class: "w-full px-3 py-2 border border-gray-300 rounded" %>
+          <p class="text-xs text-gray-400 mt-1">Ctrl(Macは⌘)キーを押しながらクリックで複数選択できます(直近50件の投稿から選択可能)</p>
+        </div>
+
         <div class="flex gap-2 pt-2">
           <%= f.submit "更新する", class: "px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 cursor-pointer" %>
           <%= link_to "キャンセル", post_path(@post), class: "px-6 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300" %>
