@@ -50,6 +50,12 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
+
+  # RSpecでテストを書く [https://github.com/rspec/rspec-rails]
+  gem "rspec-rails"
+
+  # テスト用データ生成 [https://github.com/thoughtbot/factory_bot_rails]
+  gem "factory_bot_rails"
 end
 
 group :development do
