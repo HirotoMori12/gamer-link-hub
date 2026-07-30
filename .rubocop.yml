@@ -1,8 +1,22 @@
 # Omakase Ruby styling for Rails
 inherit_gem: { rubocop-rails-omakase: rubocop.yml }
 
+plugins:
+  - rubocop-rspec
+
+AllCops:
+  NewCops: enable
+
 # Overwrite or add rules to create your own house style
 #
-# # Use `[a, [b, c]]` not `[ a, [ b, c ] ]`
-# Layout/SpaceInsideArrayLiteralBrackets:
-#   Enabled: false
+# Use `[a, [b, c]]` not `[ a, [ b, c ] ]`(プロジェクト全体で一貫してこの書き方のため)
+Layout/SpaceInsideArrayLiteralBrackets:
+  Enabled: false
+
+# specのデフォルト上限(1expectation/5行)は厳しすぎるため、関連するアサーションを
+# 1つのitにまとめる現状のテストスタイルに合わせて緩和する
+RSpec/MultipleExpectations:
+  Max: 5
+
+RSpec/ExampleLength:
+  Max: 10
