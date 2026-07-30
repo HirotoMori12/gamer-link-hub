@@ -70,6 +70,9 @@ group :test do
 
   # controller specでassignsを使うために必要 [https://github.com/rails/rails-controller-testing]
   gem "rails-controller-testing"
+
+  # テストカバレッジ計測 [https://github.com/simplecov-ruby/simplecov]
+  gem "simplecov", require: false
 end
 
 # 環境変数管理
