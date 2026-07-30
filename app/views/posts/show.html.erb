@@ -20,7 +20,7 @@
 
       <% if attached_images.any? || legacy_images.any? %>
         <div class="mb-6">
-          <h2 class="text-sm font-medium text-gray-600 mb-3">画像 (<%= attached_images.count + legacy_images.count %>枚)</h2>
+          <h2 class="text-sm font-medium text-gray-600 mb-3">画像 (<%= attached_images.size + legacy_images.size %>枚)</h2>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
             <% attached_images.each do |img| %>
               <div class="aspect-square bg-gray-100 rounded overflow-hidden">

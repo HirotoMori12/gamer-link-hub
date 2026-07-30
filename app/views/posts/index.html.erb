@@ -54,7 +54,7 @@
 
             <% if post.images.any? || post.attached_images.attached? %>
               <div class="text-xs text-gray-500 mb-2">
-                📎 画像 <%= post.images.count + post.attached_images.count %>枚
+                📎 画像 <%= post.images.size + post.attached_images.size %>枚
               </div>
             <% end %>
 
