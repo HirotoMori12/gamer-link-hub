@@ -41,7 +41,7 @@
     <% if @posts.any? %>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <% @posts.each do |post| %>
-          <div class="bg-white rounded-lg shadow p-4 hover:shadow-md transition">
+          <%= link_to post_path(post), class: "block bg-white rounded-lg shadow p-4 hover:shadow-md transition" do %>
             <p class="text-gray-800 mb-2"><%= truncate(post.body, length: 100) %></p>
 
             <% if post.tags.any? %>
@@ -62,7 +62,7 @@
               <span><%= post.user.username %></span>
               <span><%= post.created_at.strftime("%Y/%m/%d %H:%M") %></span>
             </div>
-          </div>
+          <% end %>
         <% end %>
       </div>
     <% else %>
