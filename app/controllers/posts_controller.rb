@@ -5,21 +5,11 @@ class PostsController < ApplicationController
   before_action :require_owner!, only: [:edit, :update, :destroy]
 
   def index
-    @posts = current_guild.posts.includes(:user, :tags, :images)
-
-    if params[:keyword].present?
-      @posts = @posts.ransack(
-        m: "or",
-        body_cont: params[:keyword],
-        tags_name_cont: params[:keyword]
-      ).result(distinct: true)
-    end
-
-    if params[:tag_id].present?
-      @posts = @posts.joins(:tags).where(tags: { id: params[:tag_id] })
-    end
-
-    @posts = @posts.order(created_at: :desc)
+    @posts = current_guild.posts
+                           .includes(:user, :tags, :images)
+                           .search_by_keyword(params[:keyword])
+                           .tagged_with(params[:tag_id])
+                           .order(created_at: :desc)
     @tags = current_guild.tags.order(:name)
   end
 
@@ -37,7 +27,7 @@ class PostsController < ApplicationController
     if @post.valid?
       ActiveRecord::Base.transaction do
         @post.save!
-        sync_tags!
+        @post.sync_tags_from_names!(params[:post][:tag_names])
       end
       redirect_to @post, notice: "更新しました"
     else
@@ -66,11 +56,5 @@ class PostsController < ApplicationController
 
   def post_params
     params.require(:post).permit(:body)
-  end
-
-  # タグ名(カンマ区切り)から投稿とタグの紐づけを同期する(追加・削除の両方に対応)
-  def sync_tags!
-    names = params[:post][:tag_names].to_s.split(/[,、\s]+/).map(&:strip).reject(&:blank?).uniq
-    @post.tags = names.map { |name| current_guild.tags.find_or_create_by!(name: name) }
   end
 end
