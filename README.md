@@ -100,20 +100,27 @@ Raindrop.ioなどのブックマークツールは「URLと複数枚の画像・
 ---
 
 ## 7. このアプリで実現すること
-### MVPで作る機能
-**① Discord連携機能（情報のキャプチャ・サジェスト・即時検索）**
-- **メッセージコマンドによる即時保存：** Discordのメッセージ右クリック（スマホは長押し）メニューから「この情報を保存」を選択するだけで完了するキャプチャ機能。DiscordのHTTP Interactionsエンドポイントを利用し、常時接続不要なステートレス構成で実装する。
-- **サジェスト応答と3秒ルール対応：** コマンドを受信すると即座に「処理中（Deferred Response）」を返し、実際の保存処理はSolid Queueを用いた非同期ジョブで実行する。処理完了後、Discord上に「直前の投稿と紐づけますか？」というボタン付きメッセージを返し、Discord内で紐づけ操作を完結させる。
-- **検索スラッシュコマンド：** `/search VRChat`のように、Discord上でタグ・キーワードによる検索が完結する機能。「素早く1件を思い出したい」という日常的なニーズは、ブラウザを開かずここで完結させる。
+> 以下は当初のMVP計画と、現時点(2026年7月)での実装状況の対比。✅=実装済み、🚧=未実装(今後の課題)。
 
-**② Webアプリ機能（閲覧・整理・管理）**
-- **認証・アクセス制御基盤：** Discord OAuthログイン機能。Guild ID（サーバーID）に基づき、同じサーバーのメンバーしか閲覧できない安全な認可設計。
-- **横断的な閲覧・整理機能：** タグ別・時系列でのグリッド表示など、大量の情報を横断的に見比べられるビューを提供する。サジェストで紐づけそびれた「未整理」の情報は、この画面から手動で既存のグループに紐づけ（整理）できる。
-- **管理機能：** 投稿の編集・削除（作成者本人のみ）、タグの編集など、Discordのチャットインターフェースでは完結しない管理系の操作を担う。
+### 実装済みの機能
+**① Discord連携機能**
+- ✅ **メッセージコマンドによる即時保存：** Discordのメッセージ右クリック（スマホは長押し）メニューから「この情報を保存」を選択するだけで、そのメッセージの本文と添付画像をPostとして保存できる。DiscordのHTTP Interactionsエンドポイント(`Discord::InteractionsController`)で受信し、Ed25519署名検証を経てSolid Queueのジョブ(`SavePostFromDiscordJob`)に処理を委譲するステートレスな構成。
+- ✅ **Deferred Responseによる3秒ルール対応：** コマンド受信時は即座に「処理中」を返し、実際の保存処理（画像のCloudinaryへのアップロード含む）は非同期ジョブで実行、完了後にフォローアップメッセージで結果(成功/失敗)をDiscord上に通知する。
+  - なお、企画段階で想定していた「直前の投稿と紐づけますか？」という提案・紐づけUIは現時点では未実装。1回のメッセージコマンドで、そのメッセージ自体を1件のPostとして保存する形になっている。
+- ✅ **検索スラッシュコマンド：** `/search VRChat` のように、Discord上でタグ名・本文キーワードによる検索が完結する(`SearchPostJob` + `PostSearcher`)。該当件数と上位の検索結果をEmbed形式でDiscordに返す。
 
-### 本リリースで作る機能
-- リンクのOGPプレビュー情報の取得・表示機能（Solid Queueを利用したバックグラウンド非同期処理）。
-- ドメイン（URL）に基づく、タグの自動付与機能。
+**② Webアプリ機能**
+- ✅ **認証・アクセス制御：** Discord OAuthログイン(`omniauth-discord`)。ログイン後、Guild(Discordサーバー)を選択して以降、そのGuildに紐づく投稿しか閲覧・操作できない(`current_guild` によるスコープ制御)。
+- ✅ **投稿一覧・検索・タグ絞り込み：** カード風グリッド表示。キーワード検索(本文・タグ名の部分一致)とタグによる絞り込みに対応(`PostsController#index`、Ransack)。
+- ✅ **投稿詳細：** 画像ギャラリー(Discordから保存した画像 + 手動保存分の画像URL両対応)、タグ一覧、本文中URLの自動リンク化を表示。
+- ✅ **投稿の編集・削除：** 作成者本人のみ本文編集・タグの追加削除・削除(確認ダイアログ付き)が可能。本人以外がURLを直接叩いても詳細画面へリダイレクトされブロックされる(`require_owner!`)。
+- ✅ **アイテム単位の紐づけ機能：** 当初の企画で中心的な差別化ポイントとしていた「別々に貼られたリンクと画像を1つの塊として紐づける」仕組みを、`PostLink`(投稿間の対称な関連付けを表す中間テーブル)として実装。投稿編集画面で他の投稿を選択して関連付け、投稿詳細画面に「関連投稿」として一覧表示される(`Post#related_posts`、双方向リンクは`Post#link_with!`/`#unlink_from!`で同期)。
+  - ただし当初想定していた「Discordでの保存直後に直前の投稿との紐づけを提案する」フローではなく、Web編集画面から手動で関連投稿を選ぶ形になっている(Discord側からの自動サジェストは未実装)。
+
+### 未実装・今後の課題
+- 🚧 リンクのOGPプレビュー情報の取得・表示機能。
+- 🚧 ドメイン（URL）に基づく、タグの自動付与機能。
+- 🚧 投稿者本人以外(管理者ロールなど)による削除・モデレーション機能。
 
 ---
 
@@ -121,14 +128,17 @@ Raindrop.ioなどのブックマークツールは「URLと複数枚の画像・
 ### 8-1. 外部API連携時のUXとパフォーマンス制約
 - **何が問題になりそうか：** DiscordのInteractions APIは「リクエスト受信から3秒以内に応答（ACK）を返さないと無効になる」という厳格な制約がある。画像を含むメッセージの処理や外部API連携を同期的に行うと、この3秒ルールを超過してエラーになる懸念がある。
 - **そのために考えている対策：** Webhookを受信したRailsのエンドポイントでは、検証のみ行い即座に「Deferred Response」をDiscordに返す。重い保存処理はRails 8標準のSolid Queueにジョブとして渡し、非同期処理が完了次第、フォローアップWebhookを利用して結果をユーザーに通知するアーキテクチャとする。
+  - ✅ 実装済み：`Discord::InteractionsController` が即座にDeferred Responseを返し、`SavePostFromDiscordJob`/`SearchPostJob` が非同期で処理・フォローアップ通知を行う。
 
 ### 8-2. APIエンドポイントのセキュリティ担保
 - **何が問題になりそうか：** インターネット上に公開されたDiscord向けのエンドポイントに対して、悪意のある第三者から偽装リクエストが送信されるリスク。Discordからの正規リクエスト以外を弾かないと、不正なデータがDBに書き込まれてしまう。
 - **そのために考えている対策：** Discordの仕様に従い、ヘッダーに付与される `x-signature-ed25519` を利用した公開鍵暗号による署名検証を実装する。検証に失敗したリクエストは即座に `401 Unauthorized` を返すセキュアな設計を徹底する。
+  - ✅ 実装済み：`Discord::SignatureVerifier`(`ed25519` gem)で署名検証し、失敗時は `401` を返す。
 
 ### 8-3. Discord内検索とWebアプリの役割の重複
 - **何が問題になりそうか：** 検索機能をDiscordのスラッシュコマンドとWebアプリの両方に持たせると、ユーザーがどちらを使えばよいか迷い、Webアプリの存在意義が薄れてしまう懸念がある。
 - **そのために考えている対策：** 「素早く1件を思い出す」用途はDiscordのスラッシュコマンド、「大量の情報を横断的に見比べる・整理する・管理する」用途はWebアプリ、という役割分担を明確にし、Webアプリ側は単純なキーワード検索よりも、タグ別グリッド表示や手動整理といった、チャットインターフェースでは実現しにくい機能に重点を置く。
+  - ✅ 実装済み：Discord側は `/search`、Web側は投稿一覧のキーワード検索・タグ絞り込みとして、想定通りの役割分担で実装されている。
 
 ---
 
@@ -141,11 +151,19 @@ Raindrop.ioなどのブックマークツールは「URLと複数枚の画像・
 ---
 
 ## 10. 技術スタック（手段としての技術）
-### 10-1. 使用予定の技術
-- **フレームワーク：** Ruby on Rails 8
+### 10-1. 使用技術(現状)
+- **フレームワーク：** Ruby on Rails 8.1 / Ruby (`.ruby-version` を参照)
 - **DB：** PostgreSQL
-- **デプロイ先：** Render (Web, PostgreSQL) / Cloudinary または Amazon S3 (画像保存)
-- **使用予定ライブラリ：** OmniAuth (ログイン用), Ransack (検索用), Solid Queue (非同期処理), `ed25519` / `rbnacl` (署名検証用)
+- **フロントエンド：** Turbo + Stimulus + importmap-rails(Node.js/バンドラ不要)。CSSはTailwind風のクラス名を独自の最小限スタイルシート(`app/assets/stylesheets/application.css`)で実装(Tailwind本体は未導入)。
+- **非同期処理：** Solid Queue(Rails 8標準、DBバックエンド。Redis不使用)
+- **デプロイ先：** Render(`bin/render-build.sh`)。Kamalによるコンテナデプロイ設定(`config/deploy.yml`)も用意。
+- **画像保存：** Active Storage + Cloudinary(`cloudinary` gem。本番は `config/storage.yml` の `cloudinary` サービスを使用)
+- **認証：** OmniAuth + `omniauth-discord`(Discord OAuth)
+- **検索：** Ransack
+- **Discord Interactions署名検証：** `ed25519`
+- **テスト：** RSpec + FactoryBot(主要機能)、Minitest(Rails標準生成分)、Bullet(N+1検知)、SimpleCov(カバレッジ計測)
+- **静的解析・Lint：** RuboCop(`rubocop-rails-omakase` + `rubocop-rspec`)、Brakeman、bundler-audit
+- **CI：** GitHub Actions(`.github/workflows/ci.yml`)。PR作成時・push時にlint/セキュリティスキャン/テストを自動実行
 
 ### 10-2. 技術選定の比較検討
 | 候補 | 採用/不採用 | 理由 |
@@ -158,12 +176,74 @@ Raindrop.ioなどのブックマークツールは「URLと複数枚の画像・
   - DiscordのGuild IDを用いた安全なマルチテナント（アクセス制御）設計。
   - 親要素と子要素、およびタグによる多対多の複雑なデータベース設計。
 
-### 10-3. キャッチアップ不足の懸念
+### 10-3. キャッチアップ不足の懸念(→ 実装時にどう解決したか)
 **1. Discord Interactionsの署名検証とセキュリティ実装**
 リクエストが本当にDiscordから送信されたものかを検証する `Ed25519` 署名検証の実装は未経験の領域です。検証ロジックをRailsのミドルウェアやコントローラに正しく組み込むための調査・キャッチアップに一定の時間を要する可能性があります。
+→ `Discord::SignatureVerifier` として実装し、`Discord::InteractionsController` の `before_action` で全リクエストを検証する形に落ち着いた。
 
 **2. Application Commandsの登録とライフサイクル管理**
 Discordのコマンド登録は、グローバル登録では反映に遅延が生じるため、開発効率を上げるには特定のサーバー向けに登録する（Guild-scoped）設計が推奨されます。このAPIを通じたコマンドの登録・更新・削除スクリプトをRailsタスク等で構築する運用ノウハウがなく、仕様把握に時間がかかる懸念があります。
+→ `lib/tasks/discord.rake`(`discord:commands:register` / `list` / `clear`)としてRakeタスク化し、`DISCORD_TEST_GUILD_ID` で指定したサーバーにGuild-scopedで登録する運用にした。詳細は [セットアップ手順](#11-セットアップ手順) を参照。
 
 **3. Solid Queueを用いた非同期処理の設計**
 3秒ルールを回避するための「非同期ジョブ化」において、Rails 8から標準導入されたSolid Queueの環境構築を行う必要があります。本番環境でのジョブのリトライ制御や、処理完了後にDiscordへ結果を返す（Follow-up Message）非同期特有のフローにおいて、見積もり以上の時間がかかる可能性があります。
+→ `SavePostFromDiscordJob`/`SearchPostJob` として実装し、処理結果を `Discord::ApiClient` 経由のフォローアップメッセージでDiscordに返す形で完結させた。
+
+---
+
+## 11. セットアップ手順
+前提: Ruby(`.ruby-version` に記載のバージョン)とPostgreSQLがローカルで利用できること。
+
+1. 依存関係をインストール
+   ```sh
+   bundle install
+   ```
+
+2. 環境変数を設定する。リポジトリルートに `.env` を作成し、Discord Developer Portalで作成したアプリケーションの値を設定する。
+   ```
+   DISCORD_CLIENT_ID=
+   DISCORD_CLIENT_SECRET=
+   DISCORD_BOT_TOKEN=
+   DISCORD_PUBLIC_KEY=
+   DISCORD_TEST_GUILD_ID=   # Application Commandsをguild-scopedで登録するテストサーバーのID
+   ```
+   画像保存にはCloudinaryをActive Storageのバックエンドとして使用している(本番のみ。開発・テストはローカルディスク)。本番運用時はCloudinary側の認証情報(`CLOUDINARY_URL` など)を別途設定する。
+
+3. データベースを準備する
+   ```sh
+   bin/rails db:prepare
+   ```
+
+4. (Discord連携を動かす場合)Application Commandsをテストサーバーに登録する
+   ```sh
+   bin/rails discord:commands:register   # 登録
+   bin/rails discord:commands:list       # 登録済みコマンドの確認
+   bin/rails discord:commands:clear      # 全コマンド削除
+   ```
+
+5. 開発サーバーを起動する
+   ```sh
+   bin/dev
+   ```
+   `bin/setup` で1〜3の一部(bundle install・db:prepare)を自動化できる。
+
+## 12. テスト
+RSpec(主要機能のテスト)とMinitest(Rails標準生成分)を併用している。
+
+```sh
+bundle exec rspec      # RSpec
+bin/rails test          # Minitest
+```
+
+Lint・セキュリティチェック:
+```sh
+bin/rubocop              # スタイルチェック(rubocop-rails-omakase + rubocop-rspec)
+bin/brakeman              # 静的セキュリティ解析
+bin/bundler-audit         # gemの既知脆弱性チェック
+bin/importmap audit       # JS依存(importmap)の脆弱性チェック
+```
+
+`bin/ci`(`config/ci.rb`)でスタイルチェック・セキュリティスキャン・Minitestをまとめて実行できるが、**`bin/ci` は現時点で `bundle exec rspec` を含んでいない**点に注意(RSpec導入時にこのローカルCIスクリプトへの追従が漏れている)。GitHub Actions(`.github/workflows/ci.yml`)側はRSpec・Minitest・RuboCop・セキュリティスキャンをPR作成時・push時に自動実行する。
+
+- `bundle exec rspec` 実行時、SimpleCovによりカバレッジレポートが `coverage/index.html` に出力される。
+- development環境ではBulletが有効化されており、N+1クエリを検知するとログ・ブラウザ通知で警告する(test環境では検知時にテスト自体を失敗させる設定)。
