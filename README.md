@@ -108,6 +108,7 @@ Raindrop.ioなどのブックマークツールは「URLと複数枚の画像・
 - ✅ **Deferred Responseによる3秒ルール対応：** コマンド受信時は即座に「処理中」を返し、実際の保存処理（画像のCloudinaryへのアップロード含む）は非同期ジョブで実行、完了後にフォローアップメッセージで結果(成功/失敗)をDiscord上に通知する。
   - なお、企画段階で想定していた「直前の投稿と紐づけますか？」という提案・紐づけUIは現時点では未実装。1回のメッセージコマンドで、そのメッセージ自体を1件のPostとして保存する形になっている。
 - ✅ **検索スラッシュコマンド：** `/search VRChat` のように、Discord上でタグ名・本文キーワードによる検索が完結する(`SearchPostJob` + `PostSearcher`)。該当件数と上位の検索結果をEmbed形式でDiscordに返す。
+- ✅ **どのサーバーでも導入できるコマンド登録・Botインストール導線：** 当初は開発用の1サーバーにのみコマンドを登録する実装だったが、Application Commandsのグローバル登録(`bin/rails discord:commands:register_global`)と、Botをサーバーに追加するOAuth2インストールリンクをWeb画面(トップページ・サーバー選択画面)に用意し、任意のサーバーで利用できるようにした。
 
 **② Webアプリ機能**
 - ✅ **認証・アクセス制御：** Discord OAuthログイン(`omniauth-discord`)。ログイン後、Guild(Discordサーバー)を選択して以降、そのGuildに紐づく投稿しか閲覧・操作できない(`current_guild` によるスコープ制御)。
@@ -183,7 +184,7 @@ Raindrop.ioなどのブックマークツールは「URLと複数枚の画像・
 
 **2. Application Commandsの登録とライフサイクル管理**
 Discordのコマンド登録は、グローバル登録では反映に遅延が生じるため、開発効率を上げるには特定のサーバー向けに登録する（Guild-scoped）設計が推奨されます。このAPIを通じたコマンドの登録・更新・削除スクリプトをRailsタスク等で構築する運用ノウハウがなく、仕様把握に時間がかかる懸念があります。
-→ `lib/tasks/discord.rake`(`discord:commands:register` / `list` / `clear`)としてRakeタスク化し、`DISCORD_TEST_GUILD_ID` で指定したサーバーにGuild-scopedで登録する運用にした。詳細は [セットアップ手順](#11-セットアップ手順) を参照。
+→ `lib/tasks/discord.rake`(`discord:commands:register` / `list` / `clear`)としてRakeタスク化。開発中はGuild-scoped(`DISCORD_TEST_GUILD_ID`、反映は即時)で素早く試し、本番投入時は同タスクの `_global` サフィックス版(`register_global`/`list_global`/`clear_global`)でグローバル登録する運用にした(反映は最大1時間程度)。MVPレビューで「テスト用の1サーバーでしかコマンドが使えない」という指摘を受け、両対応に修正した経緯がある。あわせてBotをサーバーに追加するためのOAuth2インストールリンク(`ApplicationHelper#discord_bot_install_url`)をサーバー選択画面等に用意し、テストサーバー以外でも導入できるようにした。詳細は [セットアップ手順](#11-セットアップ手順) を参照。
 
 **3. Solid Queueを用いた非同期処理の設計**
 3秒ルールを回避するための「非同期ジョブ化」において、Rails 8から標準導入されたSolid Queueの環境構築を行う必要があります。本番環境でのジョブのリトライ制御や、処理完了後にDiscordへ結果を返す（Follow-up Message）非同期特有のフローにおいて、見積もり以上の時間がかかる可能性があります。
@@ -205,7 +206,7 @@ Discordのコマンド登録は、グローバル登録では反映に遅延が�
    DISCORD_CLIENT_SECRET=
    DISCORD_BOT_TOKEN=
    DISCORD_PUBLIC_KEY=
-   DISCORD_TEST_GUILD_ID=   # Application Commandsをguild-scopedで登録するテストサーバーのID
+   DISCORD_TEST_GUILD_ID=   # Application Commandsをguild-scopedで即時反映させる開発用テストサーバーのID
    ```
    画像保存にはCloudinaryをActive Storageのバックエンドとして使用している(本番のみ。開発・テストはローカルディスク)。本番運用時はCloudinary側の認証情報(`CLOUDINARY_URL` など)を別途設定する。
 
@@ -214,14 +215,25 @@ Discordのコマンド登録は、グローバル登録では反映に遅延が�
    bin/rails db:prepare
    ```
 
-4. (Discord連携を動かす場合)Application Commandsをテストサーバーに登録する
-   ```sh
-   bin/rails discord:commands:register   # 登録
-   bin/rails discord:commands:list       # 登録済みコマンドの確認
-   bin/rails discord:commands:clear      # 全コマンド削除
+4. Botをサーバーに追加する。ログイン後の画面(トップページ・サーバー選択画面)に表示される「Botをサーバーに追加する」リンク、または以下のURLから追加できる。
+   ```
+   https://discord.com/api/oauth2/authorize?client_id=<DISCORD_CLIENT_ID>&scope=bot%20applications.commands&permissions=0
    ```
 
-5. 開発サーバーを起動する
+5. Application Commandsを登録する
+   ```sh
+   # 開発用: DISCORD_TEST_GUILD_IDのサーバーにのみ即時反映
+   bin/rails discord:commands:register
+   bin/rails discord:commands:list
+   bin/rails discord:commands:clear
+
+   # 本番用: Botが参加している全サーバーに反映(反映まで最大1時間程度)
+   bin/rails discord:commands:register_global
+   bin/rails discord:commands:list_global
+   bin/rails discord:commands:clear_global
+   ```
+
+6. 開発サーバーを起動する
    ```sh
    bin/dev
    ```

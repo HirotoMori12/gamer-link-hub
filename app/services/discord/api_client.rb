@@ -35,15 +35,62 @@ module Discord
       get_json(uri, headers: { "Authorization" => "Bearer #{access_token}" }, action: "fetching user guilds")
     end
 
+    # Application Commandsをグローバル登録する(全サーバーに反映されるが、反映まで最大1時間程度かかる)
+    def register_global_commands(commands)
+      put_json(global_commands_uri, body: commands, headers: bot_auth_header, action: "registering global commands")
+    end
+
+    def list_global_commands
+      get_json(global_commands_uri, headers: bot_auth_header, action: "listing global commands")
+    end
+
+    def clear_global_commands
+      put_json(global_commands_uri, body: [], headers: bot_auth_header, action: "clearing global commands")
+    end
+
+    # Application Commandsを特定サーバーにのみ登録する(開発用。反映は即時)
+    def register_guild_commands(guild_id, commands)
+      put_json(guild_commands_uri(guild_id), body: commands, headers: bot_auth_header, action: "registering guild commands")
+    end
+
+    def list_guild_commands(guild_id)
+      get_json(guild_commands_uri(guild_id), headers: bot_auth_header, action: "listing guild commands")
+    end
+
+    def clear_guild_commands(guild_id)
+      put_json(guild_commands_uri(guild_id), body: [], headers: bot_auth_header, action: "clearing guild commands")
+    end
+
     private
 
     def followup_uri(interaction_token)
       URI("#{BASE_URL}/webhooks/#{@application_id}/#{interaction_token}")
     end
 
-    def post_json(uri, body:, action:)
+    def global_commands_uri
+      URI("#{BASE_URL}/applications/#{@application_id}/commands")
+    end
+
+    def guild_commands_uri(guild_id)
+      URI("#{BASE_URL}/applications/#{@application_id}/guilds/#{guild_id}/commands")
+    end
+
+    def bot_auth_header
+      { "Authorization" => "Bot #{@bot_token}" }
+    end
+
+    def post_json(uri, body:, action:, headers: {})
       request = Net::HTTP::Post.new(uri)
       request["Content-Type"] = "application/json"
+      headers.each { |key, value| request[key] = value }
+      request.body = body.to_json
+      perform_request(uri, request, action: action)
+    end
+
+    def put_json(uri, body:, action:, headers: {})
+      request = Net::HTTP::Put.new(uri)
+      request["Content-Type"] = "application/json"
+      headers.each { |key, value| request[key] = value }
       request.body = body.to_json
       perform_request(uri, request, action: action)
     end
