@@ -15,6 +15,10 @@
         <%= link_to "サーバーを選択", guilds_path, class: "inline-block px-6 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300" %>
         <%= button_to "ログアウト", sign_out_path, method: :delete, data: { turbo: false }, class: "inline-block px-6 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400" %>
       </div>
+      <p class="text-xs text-gray-400 mt-4">
+        Discordコマンドを使うにはBotの追加が必要です。
+        <%= link_to "Botをサーバーに追加する", discord_bot_install_url, target: "_blank", rel: "noopener noreferrer", class: "text-indigo-600 hover:underline" %>
+      </p>
     </div>
   <% else %>
     <%= button_to "Discordでログイン", sign_in_path, method: :post, data: { turbo: false }, class: "px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium" %>

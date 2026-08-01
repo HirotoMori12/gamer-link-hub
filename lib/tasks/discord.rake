@@ -1,114 +1,90 @@
-require "net/http"
-require "json"
-require "uri"
-
 namespace :discord do
   namespace :commands do
-    desc "Register application commands (guild-scoped)"
+    COMMANDS = [
+      {
+        name: "この情報を保存",
+        type: 3
+      },
+      {
+        name: "search",
+        description: "保存された情報を検索します",
+        type: 1,
+        options: [
+          {
+            name: "keyword",
+            description: "検索キーワード",
+            type: 3,
+            required: true
+          }
+        ]
+      }
+    ].freeze
+
+    def discord_require_env!(*names)
+      missing = names.select { |name| ENV[name].blank? }
+      return if missing.empty?
+
+      puts "エラー: 環境変数が不足しています"
+      names.each { |name| puts "  #{name}: #{ENV[name].present? ? 'OK' : 'NG'}" }
+      exit 1
+    end
+
+    def discord_report_result(result, success_message)
+      if result
+        puts success_message
+        Array(result).each { |cmd| puts "  - #{cmd['name']} (id: #{cmd['id']}, type: #{cmd['type']})" }
+      else
+        puts "失敗しました(ログを確認してください)"
+        exit 1
+      end
+    end
+
+    desc "Register application commands to the test guild only (instant, for local development)"
     task register: :environment do
-      application_id = ENV["DISCORD_CLIENT_ID"]
-      bot_token = ENV["DISCORD_BOT_TOKEN"]
-      guild_id = ENV["DISCORD_TEST_GUILD_ID"]
+      discord_require_env! "DISCORD_CLIENT_ID", "DISCORD_BOT_TOKEN", "DISCORD_TEST_GUILD_ID"
 
-      if application_id.blank? || bot_token.blank? || guild_id.blank?
-        puts "エラー: 環境変数が不足しています"
-        puts "  DISCORD_CLIENT_ID: #{application_id.present? ? 'OK' : 'NG'}"
-        puts "  DISCORD_BOT_TOKEN: #{bot_token.present? ? 'OK' : 'NG'}"
-        puts "  DISCORD_TEST_GUILD_ID: #{guild_id.present? ? 'OK' : 'NG'}"
-        exit 1
-      end
-
-      commands = [
-        {
-          name: "この情報を保存",
-          type: 3
-        },
-        {
-          name: "search",
-          description: "保存された情報を検索します",
-          type: 1,
-          options: [
-            {
-              name: "keyword",
-              description: "検索キーワード",
-              type: 3,
-              required: true
-            }
-          ]
-        }
-      ]
-
-      uri = URI("https://discord.com/api/v10/applications/#{application_id}/guilds/#{guild_id}/commands")
-      request = Net::HTTP::Put.new(uri)
-      request["Authorization"] = "Bot #{bot_token}"
-      request["Content-Type"] = "application/json"
-      request.body = commands.to_json
-
-      response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
-        http.request(request)
-      end
-
-      if response.code == "200"
-        registered_commands = JSON.parse(response.body)
-        puts "コマンド登録成功: #{registered_commands.length}件"
-        registered_commands.each do |cmd|
-          puts "  - #{cmd['name']} (type: #{cmd['type']})"
-        end
-      else
-        puts "コマンド登録失敗: HTTPステータス #{response.code}"
-        puts response.body
-        exit 1
-      end
+      result = Discord::ApiClient.new.register_guild_commands(ENV["DISCORD_TEST_GUILD_ID"], COMMANDS)
+      discord_report_result(result, "コマンド登録成功(テストサーバーのみ、即時反映): #{Array(result).length}件")
     end
 
-    desc "List registered commands"
+    desc "List commands registered to the test guild"
     task list: :environment do
-      application_id = ENV["DISCORD_CLIENT_ID"]
-      bot_token = ENV["DISCORD_BOT_TOKEN"]
-      guild_id = ENV["DISCORD_TEST_GUILD_ID"]
+      discord_require_env! "DISCORD_CLIENT_ID", "DISCORD_BOT_TOKEN", "DISCORD_TEST_GUILD_ID"
 
-      uri = URI("https://discord.com/api/v10/applications/#{application_id}/guilds/#{guild_id}/commands")
-      request = Net::HTTP::Get.new(uri)
-      request["Authorization"] = "Bot #{bot_token}"
-
-      response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
-        http.request(request)
-      end
-
-      if response.code == "200"
-        commands = JSON.parse(response.body)
-        puts "登録済みコマンド: #{commands.length}件"
-        commands.each do |cmd|
-          puts "  - #{cmd['name']} (id: #{cmd['id']}, type: #{cmd['type']})"
-        end
-      else
-        puts "コマンド取得失敗: HTTPステータス #{response.code}"
-        puts response.body
-      end
+      result = Discord::ApiClient.new.list_guild_commands(ENV["DISCORD_TEST_GUILD_ID"])
+      discord_report_result(result, "登録済みコマンド(テストサーバー): #{Array(result).length}件")
     end
 
-    desc "Delete all registered commands"
+    desc "Delete all commands registered to the test guild"
     task clear: :environment do
-      application_id = ENV["DISCORD_CLIENT_ID"]
-      bot_token = ENV["DISCORD_BOT_TOKEN"]
-      guild_id = ENV["DISCORD_TEST_GUILD_ID"]
+      discord_require_env! "DISCORD_CLIENT_ID", "DISCORD_BOT_TOKEN", "DISCORD_TEST_GUILD_ID"
 
-      uri = URI("https://discord.com/api/v10/applications/#{application_id}/guilds/#{guild_id}/commands")
-      request = Net::HTTP::Put.new(uri)
-      request["Authorization"] = "Bot #{bot_token}"
-      request["Content-Type"] = "application/json"
-      request.body = [].to_json
+      Discord::ApiClient.new.clear_guild_commands(ENV["DISCORD_TEST_GUILD_ID"])
+      puts "テストサーバーの全コマンド削除完了"
+    end
 
-      response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
-        http.request(request)
-      end
+    desc "Register application commands globally (all guilds the bot is in; can take up to ~1 hour to propagate)"
+    task register_global: :environment do
+      discord_require_env! "DISCORD_CLIENT_ID", "DISCORD_BOT_TOKEN"
 
-      if response.code == "200"
-        puts "全コマンド削除完了"
-      else
-        puts "削除失敗: HTTPステータス #{response.code}"
-        puts response.body
-      end
+      result = Discord::ApiClient.new.register_global_commands(COMMANDS)
+      discord_report_result(result, "コマンド登録成功(グローバル、反映まで最大1時間程度): #{Array(result).length}件")
+    end
+
+    desc "List globally registered commands"
+    task list_global: :environment do
+      discord_require_env! "DISCORD_CLIENT_ID", "DISCORD_BOT_TOKEN"
+
+      result = Discord::ApiClient.new.list_global_commands
+      discord_report_result(result, "登録済みコマンド(グローバル): #{Array(result).length}件")
+    end
+
+    desc "Delete all globally registered commands"
+    task clear_global: :environment do
+      discord_require_env! "DISCORD_CLIENT_ID", "DISCORD_BOT_TOKEN"
+
+      Discord::ApiClient.new.clear_global_commands
+      puts "グローバルコマンド全削除完了"
     end
   end
 end
