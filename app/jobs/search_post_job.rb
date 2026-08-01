@@ -7,7 +7,7 @@ class SearchPostJob < ApplicationJob
 
     guild = Guild.find_by(discord_guild_id: interaction_data["guild_id"])
     unless guild
-      send_followup(interaction_token, content: "このサーバーではGamer Link Hubが利用できません")
+      send_followup(interaction_token, content: "❌ このサーバーはまだ利用登録されていません。メンバーの誰か1人が一度 https://gamer-link-hub.onrender.com からログインしてサーバーを選択すると使えるようになります")
       return
     end
 

@@ -18,7 +18,8 @@
     <% end %>
 
     <div class="mt-8 pt-6 border-t border-gray-200 text-center">
-      <p class="text-sm text-gray-500 mb-2">Discord上での「この情報を保存」やスラッシュコマンド(<code>/search</code>)を使うには、Botをサーバーに追加する必要があります(Web画面の閲覧だけならBot無しでも利用できます)</p>
+      <p class="text-sm text-gray-500 mb-2">Discord上での「この情報を保存」やスラッシュコマンド(<code>/search</code>)を使うには、①Botをサーバーに追加し、②メンバーの誰か1人が一度Webでログインしてサーバーを選択する、の両方が必要です(Web画面の閲覧だけならBot無しでも利用できます)</p>
+      <p class="text-xs text-gray-400 mb-3">すでにBotを追加済みなのにDiscordで「利用できません」と表示される場合は、②がまだの可能性があります</p>
       <%= link_to "Botをサーバーに追加する", discord_bot_install_url, target: "_blank", rel: "noopener noreferrer", class: "inline-block px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700" %>
     </div>
   </div>

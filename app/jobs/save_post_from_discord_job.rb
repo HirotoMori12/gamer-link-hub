@@ -10,7 +10,7 @@ class SavePostFromDiscordJob < ApplicationJob
 
     guild = find_guild(interaction_data)
     unless guild
-      send_followup(interaction_token, "❌ このサーバーではGamer Link Hubが利用できません")
+      send_followup(interaction_token, "❌ このサーバーはまだ利用登録されていません。メンバーの誰か1人が一度 https://gamer-link-hub.onrender.com からログインしてサーバーを選択すると使えるようになります")
       return
     end
 
